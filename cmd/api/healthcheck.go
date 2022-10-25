@@ -1,19 +1,22 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 )
 
 // declare a handler which writes a json response with information about the app status, env and ver
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	// Create a fixed-format JSON response from a string. Notice on using %q to get quoted text.
-	js := `{"status": "available", "environment": %q, "version": %q}`
-	js = fmt.Sprintf(js, app.config.env, version)
+	// Create a map which holds the information that we want to send in the response.
+	data := map[string]string{
+		"status":      "available",
+		"environment": app.config.env,
+		"version":     version,
+	}
 
-	// Set the "Content-Type: application/json" header on the response. Go defaults to "text/plain"
-	w.Header().Set("Content-Type", "application/json")
-
-	// Write the JSON as the HTTP response body.
-	w.Write([]byte(js))
+	// Use our writeJSON helper to write the JSON response
+	err := app.writeJSON(w, http.StatusOK, data, nil)
+	if err != nil {
+		app.logger.Print(err)
+		http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
+	}
 }
